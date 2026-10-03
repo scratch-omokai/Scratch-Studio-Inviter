@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Scratch スタジオ招待",
+  "version": "1.2.0",
+  "description": "スタジオのキュレーターや、特定ユーザーのフォロー関係からユーザーを招待リストに追加し、招待できます。",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "スタジオ招待"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "host_permissions": [
+    "https://scratch.mit.edu/*",
+    "https://api.scratch.mit.edu/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://scratch.mit.edu/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

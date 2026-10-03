@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --bg:#fff; --fg:#1d2433; --sub:#5b6577; --line:#d5dae3; --acc:#4d5bd9; --err:#b3261e; color-scheme:light dark; }
+  @media (prefers-color-scheme:dark) { :root { --bg:#1b1f2a; --fg:#e8ebf2; --sub:#9aa4b8; --line:#3a4256; --acc:#8b96ff; --err:#ff8a80; } }
+  body { width:420px; margin:0; padding:14px; box-sizing:border-box; background:var(--bg); color:var(--fg); font:13px/1.6 "Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; }
+  h1 { font-size:15px; margin:0 0 10px; } h2 { font-size:13px; margin:14px 0 6px; }
+  label { display:block; margin:10px 0 2px; color:var(--sub); }
+  input, textarea { width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:inherit; font:inherit; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline:2px solid var(--acc); outline-offset:1px; }
+  .row { display:flex; gap:8px; } .row > div { flex:1; min-width:0; }
+  button { padding:7px 10px; border:1px solid var(--acc); border-radius:6px; background:var(--acc); color:#fff; font:inherit; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--acc); } button.danger { border-color:var(--err); color:var(--err); background:transparent; }
+  button:disabled { opacity:.4; cursor:not-allowed; } .actions, .subActions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; } .subActions button { flex:1; min-width:0; }
+  .small { color:var(--sub); font-size:12px; } #summary { margin-top:10px; color:var(--sub); } #progressText { margin-top:6px; color:var(--sub); font-size:12px; }
+  progress { width:100%; height:8px; margin-top:8px; }
+  #userList { margin-top:8px; height:145px; overflow:auto; border:1px solid var(--line); border-radius:6px; padding:4px 8px; }
+  .userRow { display:flex; gap:7px; align-items:baseline; padding:2px 0; border-bottom:1px solid var(--line); } .userRow:last-child { border-bottom:0; }
+  .userRow a { color:var(--acc); text-decoration:none; overflow-wrap:anywhere; } .userRow a:hover { text-decoration:underline; } .userNum { color:var(--sub); min-width:34px; text-align:right; } .empty { color:var(--sub); padding:8px 0; }
+  #log { margin-top:8px; height:150px; overflow:auto; white-space:pre-wrap; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; }
+  #err { color:var(--err); margin-top:8px; } .divider { border:0; border-top:1px solid var(--line); margin:14px 0; }
+</style>
+</head>
+<body>
+  <h1>スタジオ招待コピー</h1>
+  <div class="row">
+    <div><label for="src">元スタジオID</label><input id="src" inputmode="numeric" placeholder="例: 51212102"></div>
+    <div><label for="dst">招待先スタジオID</label><input id="dst" inputmode="numeric" placeholder="例: 12345678"></div>
+  </div>
+  <div class="row">
+    <div><label for="delay">招待の間隔(秒・0.1以上)</label><input id="delay" type="number" min="0.1" value="3"></div>
+    <div><label for="max">1回の上限(人・最大4000)</label><input id="max" type="number" min="1" max="4000" value="100"></div>
+  </div>
+  <div class="actions">
+    <button id="collect" class="ghost">1. 対象を取得</button><button id="start" disabled>2. 招待を開始</button><button id="stop" class="ghost" disabled>停止</button>
+  </div>
+
+  <hr class="divider">
+  <h2>招待リスト</h2>
+  <div id="userCount" class="small">0人</div>
+  <div id="userList" aria-live="polite"></div>
+  <div class="subActions">
+    <button id="clearUsers" class="danger">リストをクリア</button>
+    <button id="removeInvalid" class="ghost">存在しないユーザーを削除</button>
+  </div>
+
+  <h2>招待リストのコピー&amp;ペースト</h2>
+  <label for="userListText">1行に1ユーザー名(改行・カンマ区切りも可)</label>
+  <textarea id="userListText" rows="4" placeholder="user_a&#10;user_b"></textarea>
+  <div class="subActions">
+    <button id="exportUsers" class="ghost">現在のリストを書き出す</button>
+    <button id="importUsers" class="ghost">読み込んで置き換える</button>
+  </div>
+  <div class="small">「読み込んで置き換える」は、現在の招待リストをこのテキストの内容で丸ごと置き換えます。</div>
+
+  <h2>フォロー関係から追加</h2>
+  <label for="relationUser">対象ユーザー名</label><input id="relationUser" placeholder="例: griffpatch">
+  <div class="subActions">
+    <button id="addFollowing" class="ghost">このユーザーがフォロー中を追加</button>
+    <button id="addFollowers" class="ghost">このユーザーのフォロワーを追加</button>
+  </div>
+  <div class="small">重複・自分自身は自動的に追加しません。</div>
+
+  <h2>プロフィールのワードで除外</h2>
+  <label for="profileKeywords">除外ワード(改行・スペース・カンマ区切り)</label>
+  <textarea id="profileKeywords" rows="2" placeholder="招待NG&#10;invite ng"></textarea>
+  <div class="subActions"><button id="filterProfile" class="ghost">プロフィールを調べて除外</button></div>
+  <div class="small">「私について」と「私が取り組んでいる事」の両方を対象に、大文字・小文字を区別せず検索します。</div>
+
+  <h2>ユーザー名で除外</h2>
+  <label for="ex">除外するユーザー名(任意・改行かカンマ区切り)</label>
+  <textarea id="ex" rows="2" placeholder="user_a&#10;user_b"></textarea>
+  <div class="subActions"><button id="excludeUsers" class="danger">招待リストから削除</button></div>
+  <div class="small">ここに入力したユーザー名は招待開始時にも自動的に除外されますが、このボタンで招待リストから今すぐ削除することもできます。</div>
+
+  <div id="summary"></div><div id="progressText"></div><progress id="bar" value="0" max="1" hidden></progress>
+  <div id="log" aria-live="polite"></div><div id="err" role="alert"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
