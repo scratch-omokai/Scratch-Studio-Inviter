@@ -9,10 +9,15 @@ for (const k of ["src", "dst", "delay", "max", "ex", "relationUser", "profileKey
   el.addEventListener("input", () => localStorage.setItem("si_" + k, el.value));
 }
 
+// ランダム加算チェックボックスの状態を保存・復元
+const savedJitter = localStorage.getItem("si_jitter");
+if (savedJitter !== null) $("jitter").checked = savedJitter === "1";
+$("jitter").addEventListener("change", () => localStorage.setItem("si_jitter", $("jitter").checked ? "1" : "0"));
+
 async function findTab() {
-  const tabs = await chrome.tabs.query({ url: "https://scratch.mit.edu/*" });
-  if (!tabs.length) return null;
-  return (tabs.find((t) => t.active && t.currentWindow) || tabs[0]).id;
+  let tabs = await chrome.tabs.query({ active: true, currentWindow: true, url: "https://scratch.mit.edu/*" });
+  if (!tabs.length) tabs = await chrome.tabs.query({ url: "https://scratch.mit.edu/*" });
+  return tabs.length ? tabs[0].id : null;
 }
 
 async function send(msg) {
@@ -71,7 +76,7 @@ function render(s) {
   ["collect", "addFollowing", "addFollowers", "filterProfile", "clearUsers", "excludeUsers", "removeInvalid", "importUsers"].forEach((id) => $(id).disabled = busy);
   $("stop").disabled = s.phase !== "running";
   $("start").disabled = busy || !users.length;
-  $("start").textContent = users.length ? `2. ${selected().length}人を招待` : "2. 招待を開始";
+  $("start").textContent = users.length ? `${selected().length}人を招待` : "招待を開始";
 
   const counts = s.counts || { invited: 0, skipped: 0, notfound: 0, failed: 0 };
   $("summary").textContent = s.phase === "idle" && !users.length ? "" :
@@ -192,10 +197,11 @@ $("start").onclick = async () => {
   const list = selected();
   const delay = Math.max(0.1, parseFloat($("delay").value) || 3);
   if (!list.length) return showErr("招待する対象がいません");
-  const min = Math.ceil((list.length * delay) / 60);
+  const jitter = $("jitter").checked;
+  const min = Math.ceil((list.length * delay * (jitter ? 1.25 : 1)) / 60);
   if (!confirm(`${list.length}人を、スタジオ ${dst} に招待します(約${min}分)。\n実行中は scratch.mit.edu のタブを閉じたり移動したりしないでください。\nよろしいですか?`)) return;
   try {
-    const r = await send({ type: "start", targetId: dst, users: list, delayMs: delay * 1000 });
+    const r = await send({ type: "start", targetId: dst, users: list, delayMs: Math.round(delay * 1000), jitter });
     if (!r.ok) showErr(r.error);
     await poll();
   } catch (e) { showErr(e.message); }

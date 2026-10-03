@@ -1,0 +1,22 @@
+:root { --bg:#fff; --fg:#1d2433; --sub:#5b6577; --line:#d5dae3; --acc:#4d5bd9; --err:#b3261e; color-scheme:light dark; }
+@media (prefers-color-scheme:dark) { :root { --bg:#1b1f2a; --fg:#e8ebf2; --sub:#9aa4b8; --line:#3a4256; --acc:#8b96ff; --err:#ff8a80; } }
+* { box-sizing:border-box; }
+body { margin:0; padding:14px; background:var(--bg); color:var(--fg); font:13px/1.6 "Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; }
+h1 { font-size:15px; margin:0 0 10px; } h2 { font-size:13px; margin:14px 0 6px; }
+label { display:block; margin:10px 0 2px; color:var(--sub); }
+label.check { display:flex; align-items:center; gap:6px; margin:10px 0 2px; color:var(--fg); }
+label.check input { width:auto; }
+input, textarea { width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:inherit; font:inherit; }
+textarea { resize:vertical; }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline:2px solid var(--acc); outline-offset:1px; }
+.row { display:flex; gap:8px; } .row > div { flex:1; min-width:0; }
+button { padding:7px 10px; border:1px solid var(--acc); border-radius:6px; background:var(--acc); color:#fff; font:inherit; cursor:pointer; }
+button.ghost { background:transparent; color:var(--acc); } button.danger { border-color:var(--err); color:var(--err); background:transparent; }
+button:disabled { opacity:.4; cursor:not-allowed; } .actions, .subActions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; } .subActions button { flex:1; min-width:0; }
+.small { color:var(--sub); font-size:12px; } #summary { margin-top:10px; color:var(--sub); } #progressText { margin-top:6px; color:var(--sub); font-size:12px; }
+progress { width:100%; height:8px; margin-top:8px; }
+#userList { margin-top:8px; height:145px; overflow:auto; border:1px solid var(--line); border-radius:6px; padding:4px 8px; }
+.userRow { display:flex; gap:7px; align-items:baseline; padding:2px 0; border-bottom:1px solid var(--line); } .userRow:last-child { border-bottom:0; }
+.userRow a { color:var(--acc); text-decoration:none; overflow-wrap:anywhere; } .userRow a:hover { text-decoration:underline; } .userNum { color:var(--sub); min-width:34px; text-align:right; } .empty { color:var(--sub); padding:8px 0; }
+#log { margin-top:8px; height:150px; overflow:auto; white-space:pre-wrap; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; }
+#err { color:var(--err); margin-top:8px; } .divider { border:0; border-top:1px solid var(--line); margin:14px 0; }

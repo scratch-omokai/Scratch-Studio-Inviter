@@ -1,11 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Scratch スタジオ招待",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "スタジオのキュレーターや、特定ユーザーのフォロー関係からユーザーを招待リストに追加し、招待できます。",
+  "permissions": ["sidePanel"],
   "action": {
-    "default_popup": "popup.html",
-    "default_title": "スタジオ招待"
+    "default_title": "スタジオ招待を開く"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "icons": {
     "16": "icons/icon16.png",

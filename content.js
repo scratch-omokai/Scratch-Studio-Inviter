@@ -206,13 +206,32 @@
     }
   }
 
-  async function run(targetId, users, delayMs) {
+  // 招待間隔(ミリ秒)。jitter が true のときは、0〜最大50%を1ミリ秒単位でランダムに上乗せする
+  function nextInterval(baseMs, jitter) {
+    let ms = Math.round(baseMs);
+    if (jitter) ms += Math.floor(Math.random() * (Math.floor(ms * 0.5) + 1));
+    return ms;
+  }
+
+  async function waitInterval(baseMs, jitter) {
+    const ms = nextInterval(baseMs, jitter);
+    const end = Date.now() + ms;
+    while (Date.now() < end && !state.stop) {
+      const left = Math.max(0, (end - Date.now()) / 1000).toFixed(1);
+      state.progressText = `次の招待まで ${left} 秒（今回の間隔 ${(ms / 1000).toFixed(3)} 秒）`;
+      await sleep(100);
+    }
+    state.progressText = "";
+  }
+
+  async function run(targetId, users, delayMs, jitter) {
     state.phase = "running"; state.stop = false; state.done = 0; state.total = users.length;
     state.counts = { invited: 0, skipped: 0, notfound: 0, failed: 0 };
     let consecutiveFail = 0;
-    log(`招待開始: 先=${targetId} / ${users.length}人 / 間隔 ${delayMs / 1000}秒`);
+    log(`招待開始: 先=${targetId} / ${users.length}人 / 間隔 ${delayMs / 1000}秒${jitter ? "（ランダムに最大50%加算）" : ""}`);
 
-    for (const name of users) {
+    for (let i = 0; i < users.length; i++) {
+      const name = users[i];
       if (state.stop) { log("停止しました"); break; }
       let processed = true, halt = false;
       try {
@@ -237,9 +256,10 @@
       if (processed) state.done++;
       if (halt) break;
       if (consecutiveFail >= 3) { log("! 3回連続で失敗したため停止しました"); break; }
-      await sleep(delayMs);
+      if (i < users.length - 1) await waitInterval(delayMs, jitter);
     }
 
+    state.progressText = "";
     state.phase = "finished";
     const c = state.counts;
     log(`終了: 招待 ${c.invited} / スキップ ${c.skipped} / 見つからない ${c.notfound} / 失敗 ${c.failed}`);
@@ -260,7 +280,7 @@
     if (msg.type === "start") {
       if (state.phase === "running") { send({ ok: false, error: "実行中です" }); return; }
       if (!Array.isArray(msg.users) || !msg.users.length) { send({ ok: false, error: "招待対象がありません" }); return; }
-      run(msg.targetId, msg.users, msg.delayMs); send({ ok: true }); return;
+      run(msg.targetId, msg.users, msg.delayMs, msg.jitter === true); send({ ok: true }); return;
     }
     if (msg.type === "stop") { state.stop = true; send({ ok: true }); return; }
     if (msg.type === "status") send(state);
