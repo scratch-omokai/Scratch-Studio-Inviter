@@ -11,7 +11,9 @@
     log: [], busyMessage: "", progressText: ""
   };
 
-  const log = (m) => { state.log.push(m); if (state.log.length > 500) state.log.shift(); };
+  const pad = (n) => String(n).padStart(2, "0");
+  const timeStamp = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+  const log = (m) => { state.log.push(`${timeStamp()} ${m}`); if (state.log.length > 500) state.log.shift(); };
   const csrf = () => (document.cookie.match(/(?:^|;\s*)scratchcsrftoken=([^;]+)/) || [])[1] || "";
 
   async function getMe() {
@@ -282,6 +284,7 @@
       if (!Array.isArray(msg.users) || !msg.users.length) { send({ ok: false, error: "招待対象がありません" }); return; }
       run(msg.targetId, msg.users, msg.delayMs, msg.jitter === true); send({ ok: true }); return;
     }
+    if (msg.type === "clearLog") { state.log = []; send({ ok: true }); return; }
     if (msg.type === "stop") { state.stop = true; send({ ok: true }); return; }
     if (msg.type === "status") send(state);
   });

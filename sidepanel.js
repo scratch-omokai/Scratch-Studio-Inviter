@@ -69,6 +69,42 @@ function renderUserList() {
   });
 }
 
+// ログ1行の色分け(Adderと同じ ok=緑 / warn=黄 / err=赤)
+function logClass(text) {
+  if (/^(✓|終了)/.test(text)) return "ok";
+  if (/^(!|エラー)/.test(text)) return "err";
+  if (/^(×|-|\?|除外|停止|プロフィール除外を中断|存在確認を中断)/.test(text)) return "warn";
+  return "";
+}
+
+let lastLogKey = "";
+function renderLog(lines) {
+  const key = `${lines.length}|${lines[lines.length - 1] || ""}`;
+  if (key === lastLogKey) return;
+  lastLogKey = key;
+
+  const box = $("log");
+  const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+  const rows = document.createDocumentFragment();
+  for (const line of lines) {
+    const m = String(line).match(/^(\d{2}:\d{2}:\d{2}) ([\s\S]*)$/);
+    const text = m ? m[2] : String(line);
+    const row = document.createElement("div");
+    const cls = logClass(text);
+    if (cls) row.className = cls;
+    if (m) {
+      const t = document.createElement("span");
+      t.className = "time";
+      t.textContent = m[1] + " ";
+      row.appendChild(t);
+    }
+    row.appendChild(document.createTextNode(text));
+    rows.appendChild(row);
+  }
+  box.replaceChildren(rows);
+  if (atEnd) box.scrollTop = box.scrollHeight;
+}
+
 function render(s) {
   if (Array.isArray(s.users)) users = s.users;
 
@@ -90,10 +126,7 @@ function render(s) {
   $("bar").max = Math.max(1, s.total || 1);
   $("bar").value = Math.min(s.done || 0, s.total || 1);
 
-  const box = $("log");
-  const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
-  box.textContent = (s.log || []).join("\n");
-  if (atEnd) box.scrollTop = box.scrollHeight;
+  renderLog(s.log || []);
   renderUserList();
 }
 
@@ -203,6 +236,24 @@ $("start").onclick = async () => {
   try {
     const r = await send({ type: "start", targetId: dst, users: list, delayMs: Math.round(delay * 1000), jitter });
     if (!r.ok) showErr(r.error);
+    await poll();
+  } catch (e) { showErr(e.message); }
+};
+
+$("copyLog").onclick = async () => {
+  const btn = $("copyLog");
+  try {
+    await navigator.clipboard.writeText($("log").innerText);
+    btn.textContent = "コピーしました";
+  } catch {
+    btn.textContent = "コピー失敗";
+  }
+  setTimeout(() => (btn.textContent = "コピー"), 1500);
+};
+
+$("clearLog").onclick = async () => {
+  try {
+    await send({ type: "clearLog" });
     await poll();
   } catch (e) { showErr(e.message); }
 };
